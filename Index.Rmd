@@ -1,0 +1,340 @@
+---
+title: "Warming Stripes: A Problem solving task in R"
+output: 
+  learnr::tutorial:
+    progressive: true
+    allow_skip: true
+    df_print: default
+runtime: shiny_prerendered
+description: >
+  Modelling in R
+---
+
+
+## Introduction
+
+One of the most famous visualisations of recent times not only came from ggplot2*, but also from the University of Reading itself! 
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/20181204_Warming_stripes_%28global%2C_WMO%2C_1850-2018%29_-_Climate_Lab_Book_%28Ed_Hawkins%29.png/2560px-20181204_Warming_stripes_%28global%2C_WMO%2C_1850-2018%29_-_Climate_Lab_Book_%28Ed_Hawkins%29.png){#id .class width=70%}
+
+Professor Ed Hawkin's 'Warming Stripes' graph sparked huge amounts of interest, and debate, thanks to it's innovative and striking yet easily understood presentation. You can't go far on the University of Reading campus without seeing it plastered on a poster, sign or even face-mask.
+
+If you aren't familiar with this plot, then you probably haven't been at Reading for very long, but you can read more about it here:
+
+
+https://en.wikipedia.org/wiki/Warming_stripes
+
+https://showyourstripes.info/
+
+
+*(Minor side point: I believe (but may be wrong) that he used the Python implementation of ggplot2. Happy to be corrected if wrong! But the R version is better!)
+
+It is possible to make these plots for ourselves in R, with almost identical formatting to the famous style, using only the skills we have learnt for importing data, and using `dplyr` & `ggplot2`. But it will require some careful thinking and problem solving to get to that point! 
+
+The idea of this assignment is to treat this as a problem solving exercise using R, to see how well you can break down the steps needed and link together the pieces of code. If you look online you will find other people have shared code for their own methods for producing this type of plot. But just with `dplyr` and `ggplot2` you should have the capability of producing these plots from scratch yourself.
+
+This is the solution page! If you would like to attempt this problem yourself first, please download the files from here:
+
+And there is also a video talking through this solution here:
+
+![](https://youtu.be/y3UW8gr4lXU)
+
+## Data & Methodology
+
+We are going to use data from a weather station in Oxford, one of the longest running weather stations for which the data is easily available from the UK Met Service. 
+
+The warming stripes show us each 'stripe' represent one years data. The colour represents the difference between the yearly average temperature and the average temperature in the reference period, 1971-2000. This is known as the temperature anomaly. We would only want to include years where we have complete data available - given the seasonality of temperatures missing values will certainly lead to biased yearly averages.
+
+Within the plot increasingly dark shades of red represent values with an increasingly positive temperature anomaly; increasingly dark shades of blue represent an increasingly negative temperature anomaly. An anomaly of 0, or close to 0, should be shaded in white, so that the colour scale is symmetrical. 
+When trying to think how it should look visually, take a look at examples of this plot from https://showyourstripes.info/ to think about what stylistic changes made be needed to the defaults within ggplot2.
+
+## Stage 0: Load libraries
+
+We need these `dplyr` and `ggplot2`. So let's load them in!
+
+```{r,message=FALSE}
+library(dplyr)
+library(ggplot2)
+```
+
+
+## Stage 1: Import Data
+
+We can import the data in a fairly standard way, using read.csv, or the "import dataset" menus
+
+```{r }
+oxford_data<-read.csv("oxford_data.csv")
+```
+
+But if we check the data we notice that there is a problem with one of the columns.
+
+```{r}
+summary(oxford_data)
+```
+
+We can try and find exactly whats gone wrong by looking at the data file, or looking just at the column that is causing problems.
+
+```{r}
+oxford_data$tmin
+```
+
+There is a missing value in this data. But rather unpleasantly it has been coded as "---", which means the `tmin` column is being treated not as a number but as a string.
+
+Thankfully there is an argument we can find within `read.csv` that allows for custom NA values. This also exists within the "Import Dataset" menu.
+
+```{r import1}
+oxford_data<-read.csv("oxford_data.csv",na.strings = "---")
+```
+
+Again, we should double check to see if the data has been read in appropriately.
+
+```{r}
+summary(oxford_data)
+```
+
+And this time it looks better!
+
+##  Stage 2: Manipulate Data
+
+Before going any further we should consider the structure of our data as it is now, and the structure of the data we need to be able to make a plot.
+
+Right now the data we have is:
+
+* One row per month  
+* Two columns for temperature (tmax and tmin)  
+
+
+
+The data we need for the plot would have:
+
+* One row per year  
+* One column for temperature anomaly   
+
+
+So there are going to be quite a few steps needed here to get from A to B. We definitely want to try to work these out in advance before writing the code. Some people would find it useful to draw a diagram which might help think about what order the steps should be in.
+
+There are broadly 5 steps needed. Some of these could be re-ordered and it would still be valid, but this is the order that made the most sense to me
+
+2.1: Calculate a single monthly average temperature value - based on tmax and tmin values
+
+2.2: Calculate the average temperature from within the reference period - this will be a single constant value
+
+2.3: Grouping by year and then obtaining annual averages of the average temperatures
+
+2.4: Calculate the temperature anomaly for each year 
+
+2.5: Remembering from what we found out in Stage 1 (Data Importing) - filtering to a sensible range of years with complete data
+
+
+### 2.1 Calculate a single monthly average temperature value - based on tmax and tmin values
+
+To get the monthly average we will need to take the average of the tmax and tmin column. 
+This is not a perfect method for obtaining average temperatures; see: https://journals.ametsoc.org/jamc/article/58/10/2235/343374/A-Significant-Bias-of-Tmax-and-Tmin-Average
+But it is the easiest and very commonly used given the availability of data.
+
+We have seen many examples so far about how calculate average values from within a column from multiple rows. However in this case we need to taking an average of values from multiple *columns*.
+
+This is a little trickier to do, the easiest way is to simply go back to first principles and remember the formula for calculating a mean - add all the values, then divide the sum by the number of values. I can do this using `mutate()` to create a new column called `tmean`.
+
+```{r}
+oxford_data<-
+  oxford_data %>%
+    mutate(tmean=(tmin+tmax)/2)
+```
+I am also going to over-write the existing object at this point by assigning the output to be an object called `oxford_data`. Since step 2.2 will not be inside a continuous pipe (although in the video solution, I did use a slightly more complicated method to do everything within a single pipe. The code for that alternative is included at the end of this solution.)
+
+### 2.2: Calculate the average temperature from within the reference period
+
+From the updated data created in 2.1, I will filter to just the years 1971-2000 and then get the mean value.
+
+```{r}
+refmean=oxford_data %>%
+  filter(yyyy>=1971 & yyyy<=2000) %>%
+    summarise(mean=mean(tmean))
+
+
+```
+
+
+
+### 2.3: Grouping by year and then obtaining annual averages of the average temperatures
+
+Using `group_by` and `summarise` I can now calculate mean values for each year. Remember there was one missing value in our dataset. Because of the seasonality of temperature, if we use `na.rm=T` when calculating the mean temperature for the year, we will definitely have a biased estimate of the mean. Therefore it is probably safer to not use this option for calculating the mean, and leaving the mean for this year as an NA. 
+
+```{r}
+oxford_data %>%
+  group_by(yyyy) %>%
+    summarise(tmean=mean(tmean))
+```
+
+### 2.4: Calculate the temperature anomaly for each year 
+
+Finally we can calculate the temperature anomaly by subtracting the yearly averages from the 20th century average
+
+```{r}
+oxford_data %>%
+  group_by(yyyy) %>%
+    summarise(tmean=mean(tmean)) %>%
+        mutate(anomaly=tmean-refmean$mean)
+```
+
+Note that, even though there is only one value in the data frame `refmean` we still need to refer to the column name to access this value. 
+
+
+### 2.5 Filtering to a sensible range of years with complete data
+
+Because of the missing value in 1860, then it probably makes sense to only plot the years we have complete data for. So let's restrict the plot to only 1861 and onwards.
+
+```{r}
+oxford_plot_data<-
+  oxford_data %>%
+  group_by(yyyy) %>%
+    summarise(tmean=mean(tmean)) %>%
+        mutate(anomaly=tmean-refmean$mean)%>%
+          filter(yyyy>=1861)
+```
+
+Now that I have completed my data manipulation steps I also decide to assign this into a new object called `oxford_plot_data`.
+
+We are now ready to make our plot!
+
+## Stage 3: Plotting
+
+### Make the initial plot
+
+Let's deconstruct the plot structure to understand more how it works. 
+
+* We have year on the x axis  
+* A coloured 'stripe' for each year, (a bar of constant height)   
+* The colour represents the anomaly  
+
+So within `ggplot2` our solution will be
+
+* Map `yyyy` to the x axis  
+* Map `anomaly` to the fill axis  
+* The variable going onto the y axis should not be a variable at all! We want a constant, so we can just set this to be an arbitrary value. We do need to set this to be equal to some value, so R knows how high to make each bar  
+* Use`geom_col` not `geom_bar`, because we are setting the heights of the bars, rather than using bars to summarise counts, or other statistics, from data
+
+This gives us:
+```{r}
+ggplot(data=oxford_plot_data,aes(x=yyyy,y=1,fill=anomaly))+
+  geom_col()
+```
+
+Not a bad start!
+
+Now we need to think about how to format this into the classic 'warming bars' style. There are a few things we need to do:
+
+1. Change the colour palette so that low values are blue and high values are red and zero is white  
+2. Make the colour scale 'symmetrical'. You can see from the legend that the zero value is not in the middle of scale.  
+3. Remove the small spaces between bars  
+4. Remove all the gridlines, axis labels, and backgrounds  
+
+### 3.1 Colour Palette
+
+This is where we will need to use a `scale_` function, to modify the way the colours are allocated. There are a few different scale functions for creating colour gradients depending on whether you need a single colour gradient, a double colour gradient or a n-level colour gradient. In this particular case we need a double gradient - because we want to set negative values to go from dark blue up to white (at zero). Then from zero we want an additional gradient to go from white to dark red as numbers become more positive. So the function we need is `scale_fill_gradient2`. In this we need to set the colour values for our "low", "mid" and "high" extremes of colour. 
+
+```{r}
+ggplot(data=oxford_plot_data,aes(x=yyyy,y=1,fill=anomaly))+
+  geom_col()+
+    scale_fill_gradient2(low = "darkblue",mid="white",high="darkred")
+```
+
+An alternative, and probably better, option is to use the new function `scale_fill_fermenter()`which works in a similar way to `scale_fill_brewer()` except with continuous variables being used to set colours instead. This is nice because the "RdBu" colour palette from colour brewer is exactly the colour palette used in the warming stripes plots.
+
+```{r}
+ggplot(data=oxford_plot_data,aes(x=yyyy,y=1,fill=anomaly))+
+  geom_col()+
+    scale_fill_fermenter(palette="RdBu")
+```
+
+
+### 3.2 Symmetrical colour scale
+
+A little suprisingly, because of the default options within `scale_fill_gradient2`, we now do have a symmetrical colour palette! The function defaults to a midpoint of zero, and stretches the colour assignments so that they are symmetrical. You can't tell this from just looking at the plot, but the top level of 'reds' being plotted is not at the full extent of 'darkred' unlike the blue which does extend as far as possible. If we did want to make sure of this explicitly we could set the limits within the scale call, exactly as we might modify the limits of an x or y axis as we have seen previously.
+
+```{r}
+ggplot(data=oxford_plot_data,aes(x=yyyy,y=1,fill=anomaly))+
+  geom_col()+
+    scale_fill_gradient2(low = "darkblue",mid="white",high="darkred",limits=c(-2,2))
+```
+
+
+The plot is identical, but you can see the darkest red in the legend is now a bit darker!
+
+Within `scale_fill_fermenter` thought this is not automatic - so we would need to explicitly set limits.
+
+```{r}
+ggplot(data=oxford_plot_data,aes(x=yyyy,y=1,fill=anomaly))+
+  geom_col()+
+    scale_fill_fermenter(palette="RdBu",limits=c(-1.5,1.5))
+```
+
+
+
+### 3.3 Removing spaces
+
+It may not be obvious without zooming in, but there are small spaces between each bar. This is because by default R sets bars to fill 95% of the width available, and leave 5% spacing between bars. However no such spaces exist in the 'classic' warming stripes. Thankfully this is easy to resolve by adding the option width=1 into geom_col.
+
+```{r}
+ggplot(data=oxford_plot_data,aes(x=yyyy,y=1,fill=anomaly))+
+  geom_col(width=1)+
+    scale_fill_fermenter(palette="RdBu",limits=c(-1.5,1.5))
+```
+
+
+### 3.4 Removing labels, gridlines etc.
+
+With the `theme()` function we can manually change individual components. We could use this to individually remove the labels, and gridlines. But there is also a built in theme which will do this for us - theme_void().
+
+
+```{r}
+ggplot(data=oxford_plot_data,aes(x=yyyy,y=1,fill=anomaly))+
+  geom_col(width=1)+
+    scale_fill_fermenter(palette="RdBu",limits=c(-1.5,1.5))+
+    theme_void()
+```
+
+
+We might also want to get rid of the legend, and add a title. Just to add a finishing touch
+
+```{r}
+ggplot(data=oxford_plot_data,aes(x=yyyy,y=1,fill=anomaly))+
+  geom_col(width=1,show.legend = FALSE)+
+    scale_fill_fermenter(palette="RdBu",limits=c(-1.5,1.5))+
+    theme_void()+
+      labs(title="Oxford Warming Stripes",subtitle = "1861-2019")
+```
+
+
+Job done!
+
+## Appendix 1: Solution in one pipe
+
+For the very adventurous!
+
+
+```{r}
+oxford_data %>%
+  mutate(tave=(tmax+tmin)/2) %>%
+    group_by(yyyy) %>%
+      summarise(tave=mean(tave)) %>%
+        filter(yyyy>1860) %>%
+          mutate(ref_temp=ifelse(yyyy>=1971 & yyyy <=2000, tave,NA)) %>%
+            mutate(ref_ave=mean(ref_temp,na.rm=TRUE)) %>%
+              mutate(anomaly=tave-ref_ave) %>%
+                ggplot(aes(x=yyyy,fill=anomaly,y=1))+
+                   geom_col(show.legend = FALSE,width=1)+
+                     scale_fill_fermenter(palette="RdBu",limits=c(-1.5,1.5))+
+                        theme_void()+
+                           labs(fill="Temperature Anomaly",title="Oxford Warming Stripes",subtitle = "1861-2019")
+```
+
+
+## Appendix 2: Cleaning the data
+
+If you are interested in seeing how the raw data from the met office was tidied then you can watch this video.
+
+![](https://youtu.be/6xG5U35pBFo)
+
+The script created is saved here:
