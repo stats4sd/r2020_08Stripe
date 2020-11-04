@@ -1,0 +1,249 @@
+# Warming Stripes: A Problem solving task in R
+
+## Introduction
+
+One of the most famous visualisations of recent times not only came from ggplot2*, but also from the University of Reading itself! 
+
+Professor Ed Hawkin's 'Warming Stripes' graph sparked huge amounts of interest, and debate, thanks to it's innovative and striking yet easily understood presentation. You can't go far on the University of Reading campus without seeing it plastered on a poster, sign or even face-mask.
+
+If you aren't familiar with this plot, then you probably haven't been at Reading for very long, but you can read more about it here:
+https://en.wikipedia.org/wiki/Warming_stripes
+https://showyourstripes.info/
+*(Minor side point: I believe (but may be wrong) that he used the Python implementation of ggplot2. Happy to be corrected if wrong! But the R version is better!)
+
+It is possible to make these plots for ourselves in R, with almost identical formatting to the famous style, using only the skills we have learnt for importing data, and using `dplyr` & `ggplot`. But it will require some careful thinking and problem solving to get to that point! 
+
+The idea of this assignment is to treat this as a problem solving exercise using R, to see how well you can break down the steps needed and link together the pieces of code. If you look online you will find other people have shared code for their own methods for producing this type of plot. But just with `dplyr` and `ggplot2` you should have the capability of producing these plots from scratch yourself.
+
+Depending on how confident you are feeling about your R skills there are three difficulty levels you could follow for this assignment:
+
+1: "Easy" - Skip this document entirely, and go straight to the solution which has been posted online here. I think it is better to try and solve as much of the problem for yourself if you can first, but you will still learn about problem solving in R by following through the pre-written steps
+
+2: "Medium" - Keep working through this document! Within this file we have provided step-by-step hints to the logic needed, but without specifically telling you what functions or code to use. There is more than one way to get to the final plot - so feel free to try something different to the recommended route if you think of an alternative.
+
+3: "Hard" - Stop reading this document after the "Methodology" section, and open up a new file and then and see if you can recreate the plot from the data without any hints.
+
+For levels 2 or 3 - of course when you are done, then check your work against the solutions!
+
+
+## Data 
+We are going to use data from a weather station in Oxford, one of the longest running weather stations for which the data is easily available from the UK Met Service. 
+
+A clean version of the data has been included within the zip file where you found this document, or is available here: 
+
+If you are looking for a real challenge (level 4?) then you could try to import the data from exactly the format which the UK Met Service provides their weather data. 
+The source data can be found here: https://www.metoffice.gov.uk/pub/data/weather/uk/climate/stationdata/oxforddata.txt 
+
+This will require learning skills beyond what we have covered in the course, so you will need to look into more data manipulation techniques, in particular string manipulation. You may find the `stringr` library useful for this.
+
+Because this is quite an interesting, and fairly common, type of problem people have, we have made a video walking through the steps needed for the data cleaning here: https://youtu.be/6xG5U35pBFo
+
+## Methodology
+
+The warming stripes show us each 'stripe' represent one years data. The colour represents the difference between the yearly average temperature and the average temperature in the reference period, 1971-2000. This is known as the temperature anomaly. We would only want to include years where we have complete data available - given the seasonality of temperatures missing values will certainly lead to biased yearly averages.
+
+Within the plot increasingly dark shades of red represent values with an increasingly positive temperature anomaly; increasingly dark shades of blue represent an increasingly negative temperature anomaly. An anomaly of 0, or close to 0, should be shaded in white, so that the colour scale is symmetrical. 
+When trying to think how it should look visually, take a look at examples of this plot from https://showyourstripes.info/ to think about what stylistic changes made be needed to the defaults within ggplot2.
+
+If you are planning to complete the 'hard' level of the assignment - you should now have enough information to attempt to produce the plot! Remember, you will only need to use `ggplot2` and `dplyr`; but we don't expect that you already remember all of the possible functions in these libraries. Don't be afraid to search for help online to identify particular functions, or options within functions, that you may have either forgotten about or not come across yet.
+
+If you are planning to complete the 'medium' level, or you want some hints to help with the 'hard' level, then scroll down to the next section and we can get started!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Stage 0: Load libraries
+
+Always remember to load libraries at the beginning of your script!
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+
+### Stage 1: Import Data
+
+The data is saved as a CSV file, so you should be able to read it in using exactly the same process that we have seen so far.
+
+```{r import1}
+
+```
+
+However, check the data very carefully once you have read it in! There is one particular quirk in this dataset that will cause problems if not addressed immediately. 
+
+See if you can work out how to fix this, by making a small change. 
+
+There are actually four ways you could do this:
+1. Through the import data menus,
+2. Finding and adding an appropriate argument to the code
+3. Modify the raw data file itself
+4. Write some code in R to fix this problem without re-importing the data. 
+
+"Best practice" would probably be the second of these options; but using the menus to find the code to do this will help. 
+ 
+Once you have made this change, check again to see if the data looks good, before going any further.
+
+
+## Stage 2: Manipulate Data
+
+Before going any further we should consider the structure of our data as it is now, and the structure of the data we need to be able to make a plot.
+
+Right now the data we have is:
+One row per month
+Two columns for temperature (tmax and tmin)
+
+The data we need for the plot would have:
+One row per year
+One column for temperature anomaly 
+
+So there are going to be quite a few steps needed here to get from A to B. We definitely want to try to work these out in advance before writing the code. Some people would find it useful to draw a diagram which might help think about what order the steps should be in.
+
+There are broadly 5 steps needed. Some of these could be re-ordered and it would still be valid, but this is the order that made the most sense to me
+
+2.1: Calculate a single monthly average temperature value - based on tmax and tmin values
+
+2.2: Calculate the average temperature from within the reference period - this will be a single constant value
+
+2.3: Grouping by year and then obtaining annual averages of the average temperatures
+
+2.4: Calculate the temperature anomaly for each year 
+
+2.5: Remembering from what we found out in Stage 1 (Data Importing) - filtering to a sensible range of years with complete data
+
+
+###2.1 Calculate a single monthly average temperature value - based on tmax and tmin values
+
+To get the monthly average we will need to take the average of the tmax and tmin column. 
+This is not a perfect method for obtaining average temperatures; see: https://journals.ametsoc.org/jamc/article/58/10/2235/343374/A-Significant-Bias-of-Tmax-and-Tmin-Average
+But it is the easiest and very commonly used given the availability of data.
+
+We have seen many examples so far about how calculate average values from within a column from multiple rows. However in this case we need to taking an average of values from multiple *columns*.
+
+This is a little trickier to do, the easiest way is to simply go back to first principles and remember the formula for calculating a mean - add all the values, then divide the sum by the number of values.
+
+```{r}
+
+```
+
+
+## 2.2: Calculate the average temperature from within the reference period
+
+From the new variable created in 2.1, you should be able to look for a mean value within just the 1971-2000 reference period. Remember that this will be a single constant value. So it might make sense to create a new object which just contains this single value, rather than try to add it in to the existing data.
+
+```{r}
+
+```
+
+## 2.3: Grouping by year and then obtaining annual averages of the average temperatures
+
+Using the output from step 2.1 we should now be able to move from monthly average temperatures, to yearly average temperatures.
+
+```{r}
+
+```
+
+## 2.4: Calculate the temperature anomaly for each year 
+
+Using the output from steps 2.2 and 2.3 we should be able to create a new column containing the anomaly values.
+
+
+```{r}
+
+```
+
+## 2.5 Filtering to a sensible range of years with complete data
+
+Make a judgment about how to deal with any years with missing data. Ideally we want to have a continuous sequence of years, with no breaks, and we definitely do not want any means ignoring missing values, as these will be biased.
+
+
+```{r}
+
+```
+
+
+## Stage 3: Plotting
+
+## Make the initial plot
+
+Let's deconstruct the plot structure to understand more how it works. 
+
+We have year on the x axis
+A coloured 'stripe' for each year, (a bar of constant height) 
+The colour represents the anomaly.
+
+So now you should be able to take the data you created in Stage 2, and map columns from that data against possible aesthetics. Consider what geometry you could use - remember that the height of the stripes is irrelevant, as long as it is the same for all years.
+
+```{r}
+
+```
+
+
+If you have worked out the basic plot (just using ggplot(), aes() and a geom() with no additions yet) then you will see there are a few things we need to do to get it to match the style we are aiming for.
+
+1. Change the colour palette so that low values are blue and high values are red and zero is white
+2. Make the colour scale 'symmetrical'. You should see from the legend that the zero value is not in the middle of scale.
+3. Remove the spaces between bars
+4. Remove all the gridlines, axis labels, and backgrounds
+
+So let's go with Steps 1 and 2:
+
+## 3.1 Colour Palette
+
+We will definitely need to use a `scale_` function here, to modify the way the colours are allocated. 
+
+There are at least two possible good options! Look online to investigate the different scale functions to try to find one which allows for colours to be assigned based on numeric values. The R Graphics Cookbook can help: https://r-graphics.org/recipe-colors-palette-continuous
+
+If we would like to match exactly the colour scheme used in the style of plots, this was taken from the "RdBu" palette within colour brewer https://colorbrewer2.org/#type=diverging&scheme=RdBu&n=3. We have used the `scale_colour_brewer` modifier before - but this only works for categorical variables.
+But if you search you might be able to find a similar function which allows for numeric variables instead. This function was much requested, and is brand new from only a few months ago, which is why you don't find so much documentation online about it!
+
+```{r}
+
+```
+
+
+## 3.2 Symmetrical colour scale
+
+Depending on how you solved 3.1, you may find that you inadvertently solved 3.2 at the same time! Isn't it nice when something like that happens. If not - I suggest you look into `limits`.
+
+## 3.3 Removing spaces
+
+It may not be obvious without zooming in, but there are small spaces between each bar. 
+
+This is because by default R sets bars to fill 95% of the width available, and leave 5% spacing between bars. However no such spaces exist in the 'classic' warming stripes style. Because this width is an attribute of the geometry - look into the help menus for the geom you have selected to try to find an argument to resolve this issue.
+
+```{r}
+
+```
+
+
+## 3.4 Removing formatting
+
+Almost there! The classic style has almost no formatting. Literally just the stripes and nothing else. Think about what component of the ggplot makes up this formatting, and see if there are any built in options which could easily strip it all away.
+
+```{r}
+
+```
+
+## Stage 4 - Celebrate
+
+Success! Marvel upon your creation! Impress all your friends with the ability to know make bespoke Warming Stripes plots on demand!
