@@ -33,7 +33,7 @@ It is possible to make these plots for ourselves in R, with almost identical for
 
 The idea of this assignment is to treat this as a problem solving exercise using R, to see how well you can break down the steps needed and link together the pieces of code. If you look online you will find other people have shared code for their own methods for producing this type of plot. But just with `dplyr` and `ggplot2` you should have the capability of producing these plots from scratch yourself.
 
-This is the solution page! If you would like to attempt this problem yourself first, please download the files from here:
+This is the solution page! If you would like to attempt this problem yourself first, please download the files from [here](https://github.com/stats4sd/r2020_08Stripe/raw/main/Warming%20Stripe%20Challenge.zip)
 
 And there is also a video talking through this solution here:
 
