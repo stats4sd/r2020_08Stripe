@@ -6,14 +6,20 @@ One of the most famous visualisations of recent times not only came from ggplot2
 
 Professor Ed Hawkin's 'Warming Stripes' graph sparked huge amounts of interest, and debate, thanks to it's innovative and striking yet easily understood presentation. You can't go far on the University of Reading campus without seeing it plastered on a poster, sign or even face-mask.
 
-If you aren't familiar with this plot, then you probably haven't been at Reading for very long, but you can read more about it here:
-https://en.wikipedia.org/wiki/Warming_stripes
+If you aren't familiar with this plot, then you probably haven't been at Reading for very long! It is a way of displaying trends in annual average temperatures over time for a particular location. Depending on the location, and the time range of the data, it is extremely common to see a plot like the one above - highlighting clearly how average temperatures have increased.
+
+You can read more about it here:
 https://showyourstripes.info/
-*(Minor side point: I believe (but may be wrong) that he used the Python implementation of ggplot2. Happy to be corrected if wrong! But the R version is better!)
+(Check the FAQ page for more inforamtion)
 
-It is possible to make these plots for ourselves in R, with almost identical formatting to the famous style, using only the skills we have learnt for importing data, and using `dplyr` & `ggplot`. But it will require some careful thinking and problem solving to get to that point! 
+Or through the trusty Wikipedia page:
+https://en.wikipedia.org/wiki/Warming_stripes
 
-The idea of this assignment is to treat this as a problem solving exercise using R, to see how well you can break down the steps needed and link together the pieces of code. If you look online you will find other people have shared code for their own methods for producing this type of plot. But just with `dplyr` and `ggplot2` you should have the capability of producing these plots from scratch yourself.
+
+It is possible to make these plots for ourselves in R, with almost identical formatting to the famous style, using only some data importation steps, and some commonly used functions from `dplyr` & `ggplot2`. But it will require some careful thinking and problem solving to get to that point! 
+
+The idea of this assignment is to treat this as a problem solving exercise using R. This will test you to see how well you can break down the steps needed and link together the pieces of code.
+If you look online you will find other people have shared code for their own methods for producing this type of plot. But that is not the real challenge here!
 
 Depending on how confident you are feeling about your R skills there are three difficulty levels you could follow for this assignment:
 
@@ -21,7 +27,7 @@ Depending on how confident you are feeling about your R skills there are three d
 
 2: "Medium" - Keep working through this document! Within this file we have provided step-by-step hints to the logic needed, but without specifically telling you what functions or code to use. There is more than one way to get to the final plot - so feel free to try something different to the recommended route if you think of an alternative.
 
-3: "Hard" - Stop reading this document after the "Methodology" section, and open up a new file and then and see if you can recreate the plot from the data without any hints.
+3: "Hard" - Stop reading this document after the "Methodology" section. Download the data file, start up a new project and then and see if you can recreate the plot from the data without any hints.
 
 For levels 2 or 3 - of course when you are done, then check your work against the solutions!
 
@@ -36,14 +42,16 @@ The source data can be found here: https://www.metoffice.gov.uk/pub/data/weather
 
 This will require learning skills beyond what we have covered in the course, so you will need to look into more data manipulation techniques, in particular string manipulation. You may find the `stringr` library useful for this.
 
-Because this is quite an interesting, and fairly common, type of problem people have, we have made a video walking through the steps needed for the data cleaning here: https://youtu.be/6xG5U35pBFo
+Importing slightly messy datasets into R is quite an interesting and fairly common type of problem people have. So rather than skipping over this completely, we have also made a video walking through the steps needed for the data cleaning from the original data source. You can watch this here: https://youtu.be/6xG5U35pBFo
 
 ## Methodology
 
-The warming stripes show us each 'stripe' represent one years data. The colour represents the difference between the yearly average temperature and the average temperature in the reference period, 1971-2000. This is known as the temperature anomaly. We would only want to include years where we have complete data available - given the seasonality of temperatures missing values will certainly lead to biased yearly averages.
+Within the plot we have one 'stripe' representing one year of data. The colour represents the difference between the yearly average temperature and the average temperature in the reference period, 1971-2000. This is known as the temperature anomaly.
 
 Within the plot increasingly dark shades of red represent values with an increasingly positive temperature anomaly; increasingly dark shades of blue represent an increasingly negative temperature anomaly. An anomaly of 0, or close to 0, should be shaded in white, so that the colour scale is symmetrical. 
-When trying to think how it should look visually, take a look at examples of this plot from https://showyourstripes.info/ to think about what stylistic changes made be needed to the defaults within ggplot2.
+When trying to think how it should look visually, take a look at examples of the warming stripes https://showyourstripes.info/ . Then think about what stylistic changes are needed from the defaults within `ggplot2` to reach that visual style.
+
+Also note that some values are missing in the data. Given the seasonality of temperatures, missing values will certainly lead to biased yearly averages. So we would only want to include years where we have complete data available. 
 
 If you are planning to complete the 'hard' level of the assignment - you should now have enough information to attempt to produce the plot! Remember, you will only need to use `ggplot2` and `dplyr`; but we don't expect that you already remember all of the possible functions in these libraries. Don't be afraid to search for help online to identify particular functions, or options within functions, that you may have either forgotten about or not come across yet.
 
@@ -89,49 +97,36 @@ The data is saved as a CSV file, so you should be able to read it in using exact
 
 ```
 
-However, check the data very carefully once you have read it in! There is one particular quirk in this dataset that will cause problems if not addressed immediately. 
-
-See if you can work out how to fix this, by making a small change. 
-
-There are actually four ways you could do this:
-1. Through the import data menus,
-2. Finding and adding an appropriate argument to the code
-3. Modify the raw data file itself
-4. Write some code in R to fix this problem without re-importing the data. 
-
-"Best practice" would probably be the second of these options; but using the menus to find the code to do this will help. 
- 
-Once you have made this change, check again to see if the data looks good, before going any further.
-
+However, check the data very carefully once you have read it in! Particular note if there are any missing values in the `tmin` or `tmax` columns, since these are the ones we are going to need to use.
 
 ## Stage 2: Manipulate Data
 
 Before going any further we should consider the structure of our data as it is now, and the structure of the data we need to be able to make a plot.
 
 Right now the data we have is:
-One row per month
-Two columns for temperature (tmax and tmin)
+* One row per month
+* Two columns for temperature (tmax and tmin)
 
 The data we need for the plot would have:
-One row per year
-One column for temperature anomaly 
+* One row per year
+* One column for temperature anomaly (average temperature minus reference period average temperature)
 
 So there are going to be quite a few steps needed here to get from A to B. We definitely want to try to work these out in advance before writing the code. Some people would find it useful to draw a diagram which might help think about what order the steps should be in.
 
 There are broadly 5 steps needed. Some of these could be re-ordered and it would still be valid, but this is the order that made the most sense to me
 
-2.1: Calculate a single monthly average temperature value - based on tmax and tmin values
+2.1: Calculate a single monthly average temperature value
 
-2.2: Calculate the average temperature from within the reference period - this will be a single constant value
+2.2: Calculate the average temperature from within the reference period
 
-2.3: Grouping by year and then obtaining annual averages of the average temperatures
+2.3: Group by year, and then obtaining annual averages of the average temperatures
 
 2.4: Calculate the temperature anomaly for each year 
 
-2.5: Remembering from what we found out in Stage 1 (Data Importing) - filtering to a sensible range of years with complete data
+2.5: Filter to a sensible range of years with complete data
 
 
-###2.1 Calculate a single monthly average temperature value - based on tmax and tmin values
+### 2.1 Monthly average temperature
 
 To get the monthly average we will need to take the average of the tmax and tmin column. 
 This is not a perfect method for obtaining average temperatures; see: https://journals.ametsoc.org/jamc/article/58/10/2235/343374/A-Significant-Bias-of-Tmax-and-Tmin-Average
@@ -146,15 +141,18 @@ This is a little trickier to do, the easiest way is to simply go back to first p
 ```
 
 
-## 2.2: Calculate the average temperature from within the reference period
+## 2.2: Reference period average
 
-From the new variable created in 2.1, you should be able to look for a mean value within just the 1971-2000 reference period. Remember that this will be a single constant value. So it might make sense to create a new object which just contains this single value, rather than try to add it in to the existing data.
+From the new variable created in 2.1, you should be able to look for a mean value within just the 1971-2000 reference period. Remember that this will be a single constant value. 
+
+You could try to pipe a single continuous set of steps modifying the same data all the way through to reach the solution. But it may be easier to split off at this point - and create a separate object at this point, containing just the mean value from 1971-2000. This should just be a single number.
+
 
 ```{r}
 
 ```
 
-## 2.3: Grouping by year and then obtaining annual averages of the average temperatures
+## 2.3: Annual average temperatures
 
 Using the output from step 2.1 we should now be able to move from monthly average temperatures, to yearly average temperatures.
 
@@ -162,19 +160,20 @@ Using the output from step 2.1 we should now be able to move from monthly averag
 
 ```
 
-## 2.4: Calculate the temperature anomaly for each year 
+## 2.4: Temperature anomaly
 
-Using the output from steps 2.2 and 2.3 we should be able to create a new column containing the anomaly values.
+Using the output from steps 2.2 and 2.3 we should be able to create a new column containing the anomaly values. That is taking the column of yearly averages from 2.3, and creating a new column subtracting the single number from 2.2, the mean during the reference period. 
+
+Depending on how you stored the result from 2.2, you may find you need to recap how the `$` works for accessing columns within data frames..
 
 
 ```{r}
 
 ```
 
-## 2.5 Filtering to a sensible range of years with complete data
+## 2.5 Filter data
 
-Make a judgment about how to deal with any years with missing data. Ideally we want to have a continuous sequence of years, with no breaks, and we definitely do not want any means ignoring missing values, as these will be biased.
-
+Make a judgment about how to deal with any years with missing data. You should find that there is one year with a missing value. We don't want to include this year, but also we don't really want to 'skip' a year in the plot. So it probably makes sense to include only start the plot from after any years where there are missing values.
 
 ```{r}
 
