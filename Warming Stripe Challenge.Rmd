@@ -10,7 +10,7 @@ If you aren't familiar with this plot, then you probably haven't been at Reading
 
 You can read more about it here:
 https://showyourstripes.info/
-(Check the FAQ page for more inforamtion)
+(Check the FAQ page for more information)
 
 Or through the trusty Wikipedia page:
 https://en.wikipedia.org/wiki/Warming_stripes
@@ -132,7 +132,7 @@ To get the monthly average we will need to take the average of the tmax and tmin
 This is not a perfect method for obtaining average temperatures; see: https://journals.ametsoc.org/jamc/article/58/10/2235/343374/A-Significant-Bias-of-Tmax-and-Tmin-Average
 But it is the easiest and very commonly used given the availability of data.
 
-We have seen many examples so far about how calculate average values from within a column from multiple rows. However in this case we need to taking an average of values from multiple *columns*.
+We have seen many examples so far about how to calculate average values from within a column from multiple rows. However in this case we need to taking an average of values from multiple *columns*.
 
 This is a little trickier to do, the easiest way is to simply go back to first principles and remember the formula for calculating a mean - add all the values, then divide the sum by the number of values.
 

@@ -23,7 +23,7 @@ If you aren't familiar with this plot, then you probably haven't been at Reading
 
 You can read more about it here:
 https://showyourstripes.info/
-(Check the FAQ page for more inforamtion)
+(Check the FAQ page for more information)
 
 Or through the trusty Wikipedia page:
 https://en.wikipedia.org/wiki/Warming_stripes
@@ -152,7 +152,7 @@ oxford_data %>%
     summarise(tmean=mean(tmean))
 ```
 
-### 2.4: Temperture anomaly
+### 2.4: Temperature anomaly
 
 Finally we can calculate the temperature anomaly by subtracting the yearly averages from the reference period average
 
